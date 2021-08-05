@@ -1,0 +1,9 @@
+.header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.connect-wallet-button svg {
+  vertical-align: text-top;
+}

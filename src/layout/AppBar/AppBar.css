@@ -1,0 +1,49 @@
+.header {
+	padding: 0px 25px;
+	height: 60px;
+	display: flex;
+	justify-content: space-between;
+	background-color: #001133;
+}
+
+.header .logo {
+	display: flex;
+	align-items: center;
+}
+
+.header .logo h3 {
+	margin: 0 0;
+	font-size: 36px;
+	color: #ffffff;
+}
+
+.header .menu {
+	background-color: transparent;
+	color: #ffffff;
+	border: none;
+}
+
+.menu-wrapper {
+	display: block;
+	overflow-x: scroll;
+}
+
+.connect-wallet-button {
+	display: block;
+}
+
+.connect-wallet-button-small {
+	display: none;
+}
+
+@media only screen and (max-width: 991px) {
+	.connect-wallet-button-small {
+		display: block;
+	}
+	.connect-wallet-button {
+		display: none;
+	}
+	.header .logo h3 {
+		font-size: 24px;
+	}
+}

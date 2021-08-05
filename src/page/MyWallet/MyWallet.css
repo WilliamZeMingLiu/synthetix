@@ -1,0 +1,59 @@
+.pie-container {
+	margin-top: 20px;
+}
+
+.box-1 {
+	width:  588px;
+}
+
+.wallet-address {
+	display: table; 
+	overflow: hidden;
+}
+
+.wallet-address p {
+	display: table-cell;
+	vertical-align: middle;
+	font-size: 20px;
+	word-break: break-all;
+}
+
+.wallet-address h2 {
+	font-size: 20px;
+	color: #8c8c8c;
+	display: inline;
+}
+
+.title-net {
+	display: flex;
+	align-items: center;
+}
+
+.title-net h1 {
+	margin: 0 0;
+}
+
+
+@media only screen and (max-width: 1399px) {
+	.box-1 {
+		width:  498px;
+	}
+}
+
+@media only screen and (max-width: 1199px) {
+	.box-half-container .box-1 {
+		width:  408px;
+	}
+	.box-half-container{
+  	display: flex;
+  }
+}
+
+@media only screen and (max-width: 991px) {
+	.box-half-container .box-1 {
+		width:  100%;
+	}
+	.box-half-container{
+  	display:  block;
+  }
+}
