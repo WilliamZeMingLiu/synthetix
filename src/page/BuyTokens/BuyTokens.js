@@ -45,8 +45,6 @@ export default function BuyTokens() {
   const [txResult, setTxResult] = useState(null);
   const [txError, setTxError] = useState(null);
 
-
-
   // Grabbing wallet info from Dashboard.js
   const connectedWallet = useConnectedWallet();
   const lcd = useMemo(() => {
