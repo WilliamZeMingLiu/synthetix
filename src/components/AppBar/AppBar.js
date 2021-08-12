@@ -19,6 +19,10 @@ import {
   Badge,
 } from 'antd';
 
+import {
+  Link
+} from "react-router-dom";
+
 import { WalletOutlined, LogoutOutlined } from '@ant-design/icons';
 
 import {
@@ -94,29 +98,6 @@ export default function AppBar(props) {
     </Button>
   }
 
-  const menu = (
-    <Menu className="menu" selectedKeys={[currKey]} mode="horizontal">
-      <Menu.Item onClick={() => handleChange('1')} key="1">
-        Dashboard
-      </Menu.Item>
-      <Menu.Item onClick={() => handleChange('2')} key="2">
-        Wallet
-      </Menu.Item>
-      <Menu.Item onClick={() => handleChange('3')} key="3">
-        Buy
-      </Menu.Item>
-      <Menu.Item onClick={() => handleChange('4')} key="4">
-        Sell
-      </Menu.Item>
-      <Menu.Item onClick={() => handleChange('5')} key="5">
-        Send
-      </Menu.Item>
-      <Menu.Item disabled onClick={() => handleChange('6')} key="6">
-        Swap
-      </Menu.Item>
-    </Menu>
-  )
-
   return (
     <div className="header">
       <div className="logo">
@@ -130,18 +111,25 @@ export default function AppBar(props) {
               <Menu className="menu" selectedKeys={[currKey]} mode="horizontal">
                 <Menu.Item onClick={() => handleChange('1')} key="1">
                   Dashboard
+                  <Link to="/" />
                 </Menu.Item>
+                
                 <Menu.Item onClick={() => handleChange('2')} key="2">
                   Wallet
+                  <Link to="/wallet" />
                 </Menu.Item>
+                
                 <Menu.Item onClick={() => handleChange('3')} key="3">
                   Buy
+                  <Link to="/buy" />
                 </Menu.Item>
                 <Menu.Item onClick={() => handleChange('4')} key="4">
                   Sell
+                  <Link to="/sell" />
                 </Menu.Item>
                 <Menu.Item onClick={() => handleChange('5')} key="5">
                   Send
+                  <Link to="/send" />
                 </Menu.Item>
                 <Menu.Item disabled onClick={() => handleChange('6')} key="6">
                   Swap

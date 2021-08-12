@@ -30,6 +30,9 @@ npm install @mirror-protocol/mirror.js
 npm install axios
 npm install react-apexcharts apexcharts
 npm install numeral
+npm install react-router-dom
+npm install bootstrap
+npm install serve
 
 
 ## Testing using LocalTerra
