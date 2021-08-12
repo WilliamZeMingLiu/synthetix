@@ -32,8 +32,12 @@ export default function Dashboard() {
   dateNow.setUTCHours(0,0,0,0);
 
   const dateStart = new Date(today);
-  dateStart.setDate(dateStart.getDate() - 30);
+  dateStart.setDate(dateStart.getDate() - 7);
   dateStart.setUTCHours(0,0,0,0);
+
+  const dateMonth = new Date(today);
+  dateMonth.setDate(dateMonth.getDate() - 30);
+  dateMonth.setUTCHours(0,0,0,0);
 
   const {
     loading: loadingTokenArr, 
@@ -55,7 +59,7 @@ export default function Dashboard() {
   } = useQuery(GET_ALL_STATS(), {
     pollInterval: 5000,
     variables: {
-      startDate: dateStart.getTime(),
+      startDate: dateMonth.getTime(),
       endDate: dateNow.getTime(),
     }
   });
@@ -148,7 +152,7 @@ export default function Dashboard() {
         sorter: (a, b) => a.priceChange - b.priceChange,
         sortDirections: ['descend'],
       },
-      {title: 'Last 30 days', dataIndex: 'priceChangeGraph', key: 'priceChangeGraph', align: 'right'},
+      {title: 'Last 7 days', dataIndex: 'priceChangeGraph', key: 'priceChangeGraph', align: 'right'},
 
     ];
 
