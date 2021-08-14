@@ -17,6 +17,7 @@ import {
 } from '@terra-money/wallet-provider'
 
 import Box from '../../components/Box/Box.js';
+import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
 import Loading from "../../components/Loading/Loading";
 
 //import { TxResult } from '@terra-money/terra.js';
@@ -56,14 +57,16 @@ export default function SellTokens() {
   const {loading: loadingBalance, error: errorBalance, data: dataBalance} = useQuery(GET_BALANCES(), {
     variables: { address },
   });
+  if (errorBalance) console.log(`Error! ${errorBalance.message}`);
 
   const {loading: loadingAssets, error: errorAssets, data: dataAssets} = useQuery(GET_ASSET_ADDRESSES());
+    if (errorAssets) console.log(`Error! ${errorAssets.message}`);
 
   useEffect(() => {
       const obj = {};
       if(!loadingAssets && dataAssets){
         for(const asset of dataAssets.assets){
-          if(asset.prices.price) obj[asset.token] = asset;
+          if(asset.prices.price && asset.prices.price != '0.000000') obj[asset.token] = asset;
         }
         console.log(obj);
         setAllTokens(obj);
@@ -156,143 +159,110 @@ export default function SellTokens() {
     }
   })
 
-  function renderPage(status) {
-    if(status === 'INITIALIZING') return <p>Loading...</p>
+  function renderPage() {
+    if(status === 'INITIALIZING') return <Loading />
 
     else if(status === 'WALLET_CONNECTED'){
-      return <div>
-      {connectedWallet?.availablePost && !txResult && !txError && (
-        <Box content={
-          <>
-            <h2 className="box-header">Select Token to Sell</h2>
-            <Form
-              name="basic"
-              wrapperCol={{ span: 16 }}
-              initialValues={{ 
-                amount: "",
-              }}
-              layout="vertical"
-              requiredMark={false}
-              onFinish={handleSubmit}
-              onFinishFailed={handleFail}
-            >
-              <div className="input-group">
-                <Form.Item
-                  name="type"
-                  rules={[{ required: true }]}
-                  noStyle
-                >
-                  <Select
-                    size="large"
-                    style={{width: '100px'}}
-                    onSelect={e => handleSelect(e)}
-                    showSearch
-                    placeholder="Token"
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                    }
-                    filterSort={(optionA, optionB) =>
-                      optionA.children.toLowerCase().localeCompare(optionB.children.toLowerCase())
-                    }
+      return <>
+        {connectedWallet?.availablePost && !txResult && !txError && (
+          <Box content={
+            <>
+              <Form
+                name="basic"
+                initialValues={{ 
+                  amount: "",
+                }}
+                layout="vertical"
+                requiredMark={false}
+                onFinish={handleSubmit}
+                onFinishFailed={handleFail}
+              >
+                <div>
+                  <h2 className="box-header">Receive</h2>
+                  <Form.Item
+                    name="type"
+                    rules={[{ required: true }]}
                   >
+                    <Select
+                      size="large"
+                      onSelect={e => handleSelect(e)}
+                      showSearch
+                      placeholder="Token"
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      filterSort={(optionA, optionB) =>
+                        optionA.children.toLowerCase().localeCompare(optionB.children.toLowerCase())
+                      }
+                    >
+                    
+                    {tokens.map(token => {
+                      return <Option value={token.token}>{token.symbol}</Option>
+                    })}
+
+                    </Select>
+                  </Form.Item>
+
+                  <Form.Item
+                    name="amount"
+                    rules={[{ required: true }]}
+                  >
+                    <Input 
+                      suffix={currToken ? currToken.symbol : null}
+                      onChange={e => handleAmount(e)}
+                      size="large" 
+                      type="number"
+                      className="site-input" 
+                      placeholder="0.00"
+                      min={0}
+                      max={1000000000}
+                      step="0.000001" />
+                  </Form.Item>
                   
-                  {tokens.map(token => {
-                    return <Option value={token.token}>{token.symbol}</Option>
-                  })}
+                </div>
+                <p>Token Price: {currToken !== null && (currToken.prices.price + ' UST')}</p>
+                <p>Total Price: {ustAmount !== null && (ustAmount + ' UST')}</p>
+                <p>Your Balance: {currToken !== null && ((currToken.balance/1000000).toFixed(6) + ' ' + currToken.symbol)}</p>
 
-                  </Select>
+                <Form.Item>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit"
+                  >
+                    Sell
+                  </Button>
                 </Form.Item>
+              </Form>
+            </>
+          } />
+        )}
 
-                <Form.Item
-                  name="amount"
-                  rules={[{ required: true }]}
-                  noStyle
-                >
-                  <Input 
-                    suffix={currToken ? currToken.symbol : null}
-                    onChange={e => handleAmount(e)}
-                    size="large" 
-                    type="number"
-                    className="site-input" 
-                    style={{width: '300px'}} 
-                    placeholder="0.00"
-                    min={0}
-                    max={1000000000}
-                    style={{width: '60%'}}
-                    step="0.000001" />
-                </Form.Item>
-                
-              </div>
-              <p>Token Price: {currToken !== null && (currToken.prices.price + ' UST')}</p>
-              <p>Total Price: {ustAmount !== null && (ustAmount + ' UST')}</p>
-              <p>Your Balance: {currToken !== null && ((currToken.balance/1000000).toFixed(6) + ' ' + currToken.symbol)}</p>
-
-              <Form.Item wrapperCol={{ span: 16 }}>
-                <Button 
-                  type="primary" 
-                  htmlType="submit"
-                >
-                  Sell
-                </Button>
-              </Form.Item>
-            </Form>
-          </>
-        } />
-      )}
-      {txResult && (
-        <Box content={
-          <Result
+        {txResult && (
+          <TxConfirm
             status="success"
             title="Successful Transaction"
-            subTitle={
-              <div className="result-container">
-                <p>
-                  Transaction Hash: {txResult.result.txhash}
-                </p>
-              </div>
-            }
-            extra={[
-              <Button 
-                type="primary" 
-                key="console"
-                onClick={() => setTxResult(null)}
-              >
-                Back
-              </Button>
-            ]}
+            txMsg={"Transaction Hash: " + txResult.result.txhash}
+            txResult={"Transaction Hash: " + txResult.result.txhash}
+            returnFunc={setTxResult}
           />
-        } />
-      )}
-      {txError && (
-        <Box content={
-          <Result
+        )}
+
+        {txError && (
+          <TxConfirm
             status="error"
             title="Failed Transaction"
-            subTitle={
-              <div className="result-container">
-                <p>
-                  {txError}
-                </p>
-              </div>
-            }
-            extra={[
-              <Button 
-                type="primary" 
-                key="console"
-                onClick={() => setTxError(null)}
-              >
-                Back
-              </Button>
-            ]}
+            txMsg=""
+            txResult={txError}
+            returnFunc={setTxError}
           />
-        } />
-      )}
-      {!connectedWallet && <p>Wallet not connected!</p>}
-      {connectedWallet && !connectedWallet.availablePost && (
-        <p>Can not post Tx</p>
-      )}
-      </div>
+        )}
+
+        {!connectedWallet && <p>Wallet not connected!</p>}
+        {connectedWallet && !connectedWallet.availablePost && (
+          <p>Can not post Tx</p>
+        )}
+      </>
     }
 
     return (
@@ -301,9 +271,9 @@ export default function SellTokens() {
   }  
 
   return (
-    <div className="container">
+    <>
         <h1>Sell Tokens</h1>
-        {renderPage(status)}
-    </div>
+        {renderPage()}
+    </>
   );
 }

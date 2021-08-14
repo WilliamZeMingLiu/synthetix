@@ -6,11 +6,10 @@ import { GET_ASSET_ADDRESSES } from '../../mirApiEndpoints.js';
 import { useQuery } from "@apollo/client";
 
 import Box from '../../components/Box/Box.js';
+import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
 import Loading from "../../components/Loading/Loading";
 
-import { Select, Input, Button, Form, Result } from 'antd';
-
-
+import { Select, Input, Button, Form } from 'antd';
 
 import {
   CreateTxFailed,
@@ -66,21 +65,17 @@ export default function BuyTokens() {
   const [tokenAmount, setTokenAmount] = useState(null);
   const [ustAmount, setUstAmount] = useState(null);
 
-  const [gasAmount, setGasAmount] = useState(null);
-  const [gasLimit, setGasLimit] = useState(null);
-  const [taxAmount, setTaxAmount] = useState(0);
-
   useEffect(() => {
       if(!loading && data){
         const arr = [];
         for(const obj of data.assets){
-          if(obj.prices.price) arr.push(obj);
+          if(obj.prices.price && obj.prices.price != '0.000000') arr.push(obj);
           if(obj.symbol === 'MIR' ) setCurrToken(obj);
         }
         setTokens(arr);
       }
 
-  }, [data, taxAmount, gasLimit, gasAmount])
+  }, [data])
 
   const handleSubmit = useCallback((values) => {
     const finalAmount = (ustAmount*1000000).toString();
@@ -138,7 +133,7 @@ export default function BuyTokens() {
         }
       });
       // setTaxAmount(0);
-  }, [connectedWallet, gasLimit, gasAmount, taxAmount, ustAmount]);
+  }, [connectedWallet, ustAmount]);
 
   const handleFail = useCallback((values) => { 
     // Empty function
@@ -154,18 +149,7 @@ export default function BuyTokens() {
     }
   }
 
-  const getTax = async(val) => {
-    const rawE = val * 1000000;
-    const result = await lcd.utils.calculateTax(new Coin('uusd', rawE));
-    const parseResult = parseInt(result.amount.toString())/1000000;
-    return parseResult;
-  }
-
   const handleAmount = (e) => {
-    // const tax = await getTax(e.target.value);
-    // setTaxAmount(tax);
-    console.log(currToken);
-
     setTokenAmount(e.target.value);
     setUstAmount((e.target.value*currToken.prices.price).toFixed(6))
   }
@@ -178,10 +162,8 @@ export default function BuyTokens() {
         {connectedWallet?.availablePost && !txResult && !txError && (
           <Box content={
             <>
-              <h2 className="box-header">Select Token to Buy</h2>
               <Form
                 name="basic"
-                wrapperCol={{ span: 16 }}
                 initialValues={{ 
                   type: "MIR",
                   amount: "",
@@ -191,53 +173,49 @@ export default function BuyTokens() {
                 onFinish={handleSubmit}
                 onFinishFailed={handleFail}
               >
-
-              <div className="input-group">
-                <Form.Item
-                  name="type"
-                  noStyle
-                >
-                  <Select
-                    size="large"
-                    style={{width: '120px'}}
-                    onSelect={e => handleSelect(e)}
-                    showSearch
-                    placeholder="Token"
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                    }
-                    filterSort={(optionA, optionB) =>
-                      optionA.children.toLowerCase().localeCompare(optionB.children.toLowerCase())
-                    }
+                <div>
+                  <h2 className="box-header">Buy</h2>
+                  <Form.Item
+                    name="type"
                   >
-                  {tokens.map(token => {
-                    return <Option value={token.symbol}>{token.symbol}</Option>
-                  })}
-                  </Select>
-                </Form.Item>
+                    <Select
+                      size="large"
+                      onSelect={e => handleSelect(e)}
+                      showSearch
+                      placeholder="Token"
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      filterSort={(optionA, optionB) =>
+                        optionA.children.toLowerCase().localeCompare(optionB.children.toLowerCase())
+                      }
+                    >
+                    {tokens.map(token => {
+                      return <Option value={token.symbol}>{token.symbol}</Option>
+                    })}
+                    </Select>
+                  </Form.Item>
 
-                <Form.Item
-                  name="amount"
-                  noStyle
-                  rules={[{ required: true }]}
-                >
-                  <Input 
-                    onChange={e => handleAmount(e)}
-                    size="large" 
-                    type="number"
-                    placeholder="0.00"
-                    min={0}
-                    max={1000000000}
-                    style={{width: '60%'}}
-                    step="0.000001" />
-                </Form.Item>
-              </div>
+                  <Form.Item
+                    name="amount"
+                    rules={[{ required: true }]}
+                  >
+                    <Input 
+                      onChange={e => handleAmount(e)}
+                      size="large" 
+                      type="number"
+                      placeholder="0.00"
+                      min={0}
+                      max={1000000000}
+                      step="0.000001" />
+                  </Form.Item>
 
-                <p>Token Price: {currToken !== null && numeral(currToken.prices.price).format('0,0.000000') + ' UST'}</p>
-                <p>Total Price: {ustAmount !== null && numeral(ustAmount + ' UST').format('0,0.000000') + ' UST'}</p>
+                  <p>Token Price: {currToken !== null && numeral(currToken.prices.price).format('0,0.000000') + ' UST'}</p>
+                  <p>Total: {ustAmount !== null && numeral(ustAmount + ' UST').format('0,0.000000') + ' UST'}</p>
+                </div>
 
-                <Form.Item wrapperCol={{ span: 16 }}>
+                <Form.Item>
                   <Button 
                     type="primary" 
                     htmlType="submit"
@@ -247,57 +225,30 @@ export default function BuyTokens() {
                 </Form.Item>
               </Form>
             </>
-          } />
-           
+          } />   
         )}
+
         {txResult && (
-          <Box content={
-            <Result
-              status="success"
-              title="Successful Transaction"
-              subTitle={
-                <div className="result-container">
-                  <p>
-                    Transaction Hash: {txResult.result.txhash}
-                  </p>
-                </div>
-              }
-              extra={[
-                <Button 
-                  type="primary" 
-                  key="console"
-                  onClick={() => setTxResult(null)}
-                >
-                  Back
-                </Button>
-              ]}
-            />
-          } />
+          <TxConfirm
+            status="success"
+            title="Successful Transaction"
+            txMsg={"Transaction Hash: " + txResult.result.txhash}
+            txResult={"Transaction Hash: " + txResult.result.txhash}
+            returnFunc={setTxResult}
+          />
         )}
+
         {txError && (
-          <Box content={
-            <Result
-                status="error"
-                title="Failed Transaction"
-                subTitle={
-                  <div className="result-container">
-                    <p>
-                      {txError}
-                    </p>
-                  </div>
-                }
-                extra={[
-                  <Button 
-                    type="primary" 
-                    key="console"
-                    onClick={() => setTxError(null)}
-                  >
-                    Back
-                  </Button>
-                ]}
-              />
-            } />
+          <TxConfirm
+            status="error"
+            title="Failed Transaction"
+            txMsg=""
+            txResult={txError}
+            returnFunc={setTxError}
+          />
         )}
+
+
         {!connectedWallet && <p>Wallet not connected!</p>}
         {connectedWallet && !connectedWallet.availablePost && (
           <p>Can not post Tx</p>
@@ -311,9 +262,9 @@ export default function BuyTokens() {
   }  
 
   return (
-    <div className="container">
-        <h1>Buy Tokens</h1>
-        {renderPage(status)}
-    </div>
+    <>
+      <h1>Buy Tokens</h1>
+      {renderPage(status)}
+    </>
   );
 }

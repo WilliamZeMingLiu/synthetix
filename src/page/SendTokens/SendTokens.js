@@ -17,6 +17,7 @@ import {
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 
 import Box from '../../components/Box/Box.js';
+import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
 import Loading from "../../components/Loading/Loading";
 
 import './SendTokens.css';
@@ -33,10 +34,6 @@ export default function SendTokens() {
   // Tx state variables
   const [txResult, setTxResult] = useState(null);
   const [txError, setTxError] = useState(null);
-
-  const [gasAmount, setGasAmount] = useState(null);
-  const [gasLimit, setGasLimit] = useState(null);
-  const [taxAmount, setTaxAmount] = useState(0);
 
   // Grabbing wallet info from Dashboard.js
   const connectedWallet = useConnectedWallet();
@@ -81,7 +78,7 @@ export default function SendTokens() {
       });
     }
     
-  }, [gasLimit, gasAmount, taxAmount])
+  }, [])
 
 
   const handleSubmit = useCallback((values) => {
@@ -132,25 +129,15 @@ export default function SendTokens() {
           );
         }
       });
-      setTaxAmount(0);
-  }, [connectedWallet, gasLimit, gasAmount]);
+  }, [connectedWallet]);
 
   const handleFail = useCallback((values) => { 
     // Empty function
   })
 
-  const getTax = async(val) => {
-    const rawE = val * 1000000;
-    const result = await lcd.utils.calculateTax(new Coin('uusd', rawE));
-    const parseResult = parseInt(result.amount.toString())/1000000;
-    return parseResult;
-  }
-
   const handleAmount = async(e) => {
-    const tax = await getTax(e.target.value);
-    setTaxAmount(tax);
+    return;
   }
-
 
   return (
     <>
@@ -158,7 +145,6 @@ export default function SendTokens() {
       {connectedWallet?.availablePost && !txResult && !txError && (
         <Box content={
           <>
-            <h2 className="box-header">Input Address to Send</h2>
             <Form
               name="basic"
               wrapperCol={{ span: 16 }}
@@ -233,58 +219,25 @@ export default function SendTokens() {
       )}
 
       {txResult && (
-        <Box content={
-          <Result
-            status="success"
-            title="Successful Transaction"
-            subTitle={
-              <div className="result-container">
-                <p>
-                  Sent {txResult.msgs[0].amount.toString()} to {txResult.msgs[0].to_address}
-                  <br />
-                  <br />
-                  Transaction Hash: {txResult.result.txhash}
-                </p>
-              </div>
-            }
-            extra={[
-              <Button 
-                type="primary" 
-                key="console"
-                onClick={() => setTxResult(null)}
-              >
-                Back
-              </Button>
-            ]}
-          />
-        } />
-          
+        <TxConfirm
+          status="success"
+          title="Successful Transaction"
+          txMsg={"Sent " + txResult.msgs[0].amount.toString() + " to " + txResult.msgs[0].to_address}
+          txResult={"Transaction Hash: " + txResult.result.txhash}
+          returnFunc={setTxResult}
+        />
       )}
+
       {txError && (
-        <Box content={
-          <Result
-            status="error"
-            title="Failed Transaction"
-            subTitle={
-              <div className="result-container">
-                <p>
-                  {txError}
-                </p>
-              </div>
-            }
-            extra={[
-              <Button 
-                type="primary" 
-                key="console"
-                onClick={() => setTxError(null)}
-              >
-                Back
-              </Button>
-            ]}
-          />
-        } />
-          
+        <TxConfirm
+          status="error"
+          title="Failed Transaction"
+          txMsg=""
+          txResult={txError}
+          returnFunc={setTxError}
+        />
       )}
+
       {!connectedWallet && <p>Wallet not connected!</p>}
       {connectedWallet && !connectedWallet.availablePost && (
         <p>Can not post Tx</p>

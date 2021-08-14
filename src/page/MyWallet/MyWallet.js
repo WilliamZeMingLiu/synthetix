@@ -110,7 +110,6 @@ export default function MyWallet() {
             }
           }
           tempArr.sort((a, b) => (a.uusdPrice < b.uusdPrice) ? 1 : -1);
-          console.log(tempArr);
           setCoins(tempArr);
           setCoinBalance(totalCoinBalance.toFixed(6));
         });
@@ -120,7 +119,7 @@ export default function MyWallet() {
       const obj = {};
       if(!loadingAssets && dataAssets){
         for(const asset of dataAssets.assets){
-          if(asset.prices.price) obj[asset.token] = asset;
+          if(asset.prices.price && asset.prices.price != '0.000000') obj[asset.token] = asset;
         }
         setAllTokens(obj);
       }
@@ -401,10 +400,10 @@ export default function MyWallet() {
 
   if(status === 'WALLET_NOT_CONNECTED') {
     return (
-      <div className="container">
+      <>
         <h1>Wallet</h1>
         {renderWalletInfo(status)}
-      </div>
+      </>
     ); 
   }
 
@@ -423,10 +422,10 @@ export default function MyWallet() {
 
   else {
     return (
-      <div className="container">
+      <>
         <h1>Wallet</h1>
         {renderWalletInfo(status)}
-      </div>
+      </>
     );
   }
 

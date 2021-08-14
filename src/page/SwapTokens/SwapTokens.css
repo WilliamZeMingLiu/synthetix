@@ -1,0 +1,10 @@
+.form-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-input {
+    width: 45%;
+    height: 200px;
+}

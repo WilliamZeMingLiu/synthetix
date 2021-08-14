@@ -20,7 +20,7 @@ import {
 } from 'antd';
 
 import {
-  Link
+  NavLink
 } from "react-router-dom";
 
 import { WalletOutlined, LogoutOutlined } from '@ant-design/icons';
@@ -40,7 +40,7 @@ export default function AppBar(props) {
   } = useWallet();
 
   const [ isModalVisible, setIsModalVisible ] = useState(false);
-  const [ currKey, setCurrKey ] = useState('1');
+  const [ currKey, setCurrKey ] = useState('0');
 
   const connectedWallet = useConnectedWallet();
   const lcd = useMemo(() => {
@@ -68,9 +68,12 @@ export default function AppBar(props) {
   }
 
   const handleChange = (key) => {
-    props.selectTab(key);
     setCurrKey(key);
   } 
+
+  const currLink = (match, key) => {
+    if(match) setCurrKey(key);
+  }
 
   function renderConnectButton(connectType, installType) {
     if(connectType === 'READONLY') return;
@@ -111,28 +114,29 @@ export default function AppBar(props) {
               <Menu className="menu" selectedKeys={[currKey]} mode="horizontal">
                 <Menu.Item onClick={() => handleChange('1')} key="1">
                   Dashboard
-                  <Link to="/" />
+                  <NavLink to="/" isActive={(match) => currLink(match, '1')} />
                 </Menu.Item>
                 
                 <Menu.Item onClick={() => handleChange('2')} key="2">
                   Wallet
-                  <Link to="/wallet" />
+                  <NavLink to="/wallet" isActive={(match) => currLink(match, '2')} />
                 </Menu.Item>
                 
                 <Menu.Item onClick={() => handleChange('3')} key="3">
                   Buy
-                  <Link to="/buy" />
+                  <NavLink to="/buy" isActive={(match) => currLink(match, '3')} />
                 </Menu.Item>
                 <Menu.Item onClick={() => handleChange('4')} key="4">
                   Sell
-                  <Link to="/sell" />
+                  <NavLink to="/sell" isActive={(match) => currLink(match, '4')} />
                 </Menu.Item>
                 <Menu.Item onClick={() => handleChange('5')} key="5">
                   Send
-                  <Link to="/send" />
+                  <NavLink to="/send" isActive={(match) => currLink(match, '5')} />
                 </Menu.Item>
-                <Menu.Item disabled onClick={() => handleChange('6')} key="6">
+                <Menu.Item onClick={() => handleChange('6')} key="6">
                   Swap
+                  <NavLink to="/swap" isActive={(match) => currLink(match, '6')} />
                 </Menu.Item>
               </Menu>
             </div>

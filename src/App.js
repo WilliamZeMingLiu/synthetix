@@ -6,6 +6,7 @@ import MyWallet from './page/MyWallet/MyWallet.js';
 import SendTokens from './page/SendTokens/SendTokens.js';
 import BuyTokens from './page/BuyTokens/BuyTokens.js';
 import SellTokens from './page/SellTokens/SellTokens.js';
+import SwapTokens from './page/SwapTokens/SwapTokens.js';
 import React, { useState } from 'react';
 import {
   BrowserRouter as Router,
@@ -34,7 +35,6 @@ export default function App() {
   const { SubMenu } = Menu;
   const { Header, Content, Footer, Sider } = Layout;
 
-  const [ currTab, setCurrTab ] = useState('0');
 
   /*
   // Terra mainnet
@@ -50,13 +50,7 @@ export default function App() {
     chainID: 'localterra',
     lcd: 'http://localhost:1317'
   }
-
-  // Terra testnet
-  
-
   */
-
-  // <SideMenu selectTab={selectTab} />
 
   // Gql obj
   const mainUri = 'https://graph.mirror.finance/graphql'
@@ -73,11 +67,6 @@ export default function App() {
     cache: new InMemoryCache()
   });
 
-
-  const selectTab = (currTab) => {
-    setCurrTab(currTab)
-  }
-
   return (
     <div className="App">
       <Router>
@@ -85,11 +74,11 @@ export default function App() {
           <ApolloProvider client={client}>
             <Layout className="layout">
               <div style={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
-                <AppBar selectTab={selectTab} />
+                <AppBar />
                 
                 <Content style={{ margin: '24px 16px 0', overflow: 'initial' }}>
                   <div className="container">
-                    
+  
                      <Switch>
                       <Route exact path="/">
                         <Dashboard />
@@ -106,8 +95,10 @@ export default function App() {
                       <Route path="/send">
                         <SendTokens />
                       </Route>
+                      <Route path="/swap">
+                        <SwapTokens />
+                      </Route>
                     </Switch>
-
 
                   </div>
                 </Content>

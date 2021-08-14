@@ -14,7 +14,10 @@ const numeral = require('numeral');
 
 
 export default function Dashboard() {
+  // mirror token array
   const [tokenArr, setTokenArr] = useState([]);
+
+  // volume history array
   const [volumeHistoryArr, setVolumeHistoryArr] = useState([]);
 
   // Basic stats of mirror tokens
@@ -23,8 +26,6 @@ export default function Dashboard() {
   const [volume, setVolume] = useState(null);
   const [liquidity, setLiquidity] = useState(null);
   const [marketCap, setMarketCap] = useState(null);
-
-  // token array gets updated every 1 sec (5000 milisec)
 
   const today = new Date();
   const dateNow = new Date(today);
@@ -39,6 +40,8 @@ export default function Dashboard() {
   dateMonth.setDate(dateMonth.getDate() - 30);
   dateMonth.setUTCHours(0,0,0,0);
 
+  // updated every 1 sec (5000 milisec)
+  // getting token data
   const {
     loading: loadingTokenArr, 
     error: errorTokenArr, 
@@ -51,7 +54,7 @@ export default function Dashboard() {
     },
   });
   if (errorTokenArr) console.log(`Error! ${errorTokenArr.message}`);
-
+  // get basic mirror stat data
   const {
     loading: loadingStat, 
     error: errorStat, 
@@ -70,7 +73,7 @@ export default function Dashboard() {
       const tempArr = [];
       let i = 1;
       dataTokenArr.assets.forEach((e) => {
-        if(e.prices.price){
+        if(e.prices.price && e.prices.price != '0.000000'){
           const tempObj = {};
           tempObj['key'] = String(i++);
           tempObj['tickerHtml'] = <p><b>{e.symbol}</b><br/>{e.name}</p>;
@@ -126,6 +129,7 @@ export default function Dashboard() {
         }
       });
       setTokenArr(tempArr);
+      
     }
     if(!loadingStat && dataStat){
       setActiveUsers(dataStat.statistic.today.activeUsers);
@@ -138,8 +142,7 @@ export default function Dashboard() {
       for(const obj of dataStat.statistic.tradingVolumeHistory){
         tempArr.push({timestamp: obj.timestamp, value: obj.value})
       }
-      setVolumeHistoryArr(tempArr);
-      
+      setVolumeHistoryArr(tempArr);      
     }
   }, [dataTokenArr, dataStat, loadingStat, loadingTokenArr])
   
@@ -171,7 +174,7 @@ export default function Dashboard() {
       ticker: obj.ticker, 
       liquidity: obj.liquidity,
       liquidityPretty: obj.liquidityPretty}
-    liqData.push(tempObj)
+    liqData.push(tempObj);
   }
   liqData.sort((a, b) => (a.liquidity < b.liquidity) ? 1 : -1);
   
@@ -206,18 +209,7 @@ export default function Dashboard() {
   }
 
   tokenArr.sort((a, b) => (a.marketCap < b.marketCap) ? 1 : -1);
-  const priceHistoryColumns = [];
-  const priceHistoryData = [];
-  // const priceHistoryNames = {};
-  for(const obj of tokenArr) {
-    if(obj.ticker === 'MIR'){
-      for(const x of obj.priceHistory){
-        priceHistoryData.push(parseFloat(x.price));
-        priceHistoryColumns.push(x.timestamp);
-      }
-    }
-    break;
-  }
+
   
   const volumeLeaderData = [];
   const volumeLeaderColumns = [];
