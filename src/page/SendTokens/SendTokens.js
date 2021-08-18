@@ -1,44 +1,54 @@
-import { LCDClient, Coin, Denom, MsgSend, StdFee, TxResult} from '@terra-money/terra.js'
-import { WalletOutlined } from '@ant-design/icons';
-import { Descriptions, Button, Form, Input, InputNumber, Select, Result } from 'antd';
-import { Mirror } from '@mirror-protocol/mirror.js';
-import axios from 'axios'; 
+import './SendTokens.css';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 
-//import * as All from '@terra-money/terra.js';
+// terra.js
+import { LCDClient, MsgSend, TxResult} from '@terra-money/terra.js'
+// wallet provider
 import {
   CreateTxFailed,
   Timeout,
   TxFailed,
   TxUnspecifiedError,
   useConnectedWallet,
+  useWallet,
   UserDenied,
 } from '@terra-money/wallet-provider'
-//import { TxResult } from '@terra-money/terra.js';
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
 
+// custom components
 import Box from '../../components/Box/Box.js';
 import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
+import NotConnected from '../../components/NotConnected/NotConnected.js';
 import Loading from "../../components/Loading/Loading";
+//antd components
+import { Button, Form, Input, Select } from 'antd';
+import { WalletOutlined } from '@ant-design/icons';
 
-import './SendTokens.css';
+const numeral = require('numeral');
 
 export default function SendTokens() {
-
   const { Option } = Select;
 
-  // Wallet connect variables
+  const {
+    status,
+  } = useWallet();
+
+  // NOTE: APIs return either dec or int format for token amounts, 
+  // to maintain consistency all states will be in dec format, with
+  // 6 decimal places rounded
   const [bank, setBank] = useState({coins: [], assets: []});
-  const [loadingBalance, setLoadingBalance] = useState(true);
   const [denoms, setDenoms] = useState(null);
+
+  const [currToken, setCurrToken] = useState(null);
+  const [coinAmount, setCoinAmount] = useState(null);
+
+  const [currBalance, setCurrBalance] = useState(null);
 
   // Tx state variables
   const [txResult, setTxResult] = useState(null);
   const [txError, setTxError] = useState(null);
 
-  // Grabbing wallet info from Dashboard.js
+  // set lcd obj
   const connectedWallet = useConnectedWallet();
-
-  
   const lcd = useMemo(() => {
     if (!connectedWallet) {
       return null;
@@ -56,42 +66,31 @@ export default function SendTokens() {
       // Setting denoms
       const denoms = await lcd.oracle.activeDenoms();
       setDenoms(denoms);
-      
     }
 
-
-    if(connectedWallet){
+    if(connectedWallet && lcd){
       asyncCalls(lcd);
       lcd.bank.balance(connectedWallet.walletAddress).then((coins) => {
         let index = 1;
-        if (connectedWallet && lcd) {
-          for (var coin in coins._coins) {
-            if (coins._coins.hasOwnProperty(coin)) {
-              var tempObj = {};
-              tempObj['key'] = index++;
-              tempObj['coin'] = coin;
-              tempObj['amount'] = parseInt(coins._coins[coin].amount);
-              bank.coins.push(tempObj);
-            }
+        for (var coin in coins._coins) {
+          if (coins._coins.hasOwnProperty(coin)) {
+            var tempObj = {};
+            tempObj['key'] = index++;
+            tempObj['coin'] = coin;
+            tempObj['amount'] = parseInt(coins._coins[coin].amount);
+            bank.coins.push(tempObj);
           }
         }
       });
     }
     
-  }, [])
+  }, [connectedWallet, lcd, bank, coinAmount])
 
 
-  const handleSubmit = useCallback((values) => {
-    
-    const feeType = 'uusd';
-  
+  const handleSubmit = useCallback((values) => {  
     const sendAddress = values.address;
     const sendType = values.sendType;
     const sendAm = values.send;
-
-    if (!connectedWallet) {
-      return;
-    }
 
     if (connectedWallet.network.chainID.startsWith('columnbus')) {
       alert(`This is a real transaction. Please dbl check code`);
@@ -99,10 +98,10 @@ export default function SendTokens() {
     }
 
     setTxResult(null);
+    setTxError(null);
 
     connectedWallet
       .post({
-        // fee: new StdFee(gasAmount*1.75, (gasAmount)+feeType),
         msgs: [
           new MsgSend(connectedWallet.walletAddress, sendAddress, {[sendType]: parseInt(sendAm*1000000)}),
         ],
@@ -131,80 +130,97 @@ export default function SendTokens() {
       });
   }, [connectedWallet]);
 
+  /*
   const handleFail = useCallback((values) => { 
     // Empty function
   })
+  */
 
-  const handleAmount = async(e) => {
-    return;
+  const resetState = () => {
+    setCurrBalance(null);
+    setCoinAmount(null);
+    setCurrToken(null);
+    setTxError(null);
+    setTxResult(null);
+    //console.log("resetState");
   }
 
-  return (
-    <>
-      <h1>Send Coins</h1>
+  const handleAmount = (e) => {
+    setCoinAmount(parseFloat(e.target.value));
+  }
+
+  const handleToken = (e) => {
+    setCurrToken(e);
+    if(bank){
+      for(const coin of bank.coins){
+        if(coin.coin === e){
+          setCurrBalance(parseFloat((coin.amount/1000000).toFixed(6)));
+        }
+      }
+    }
+  }
+
+  const renderPage = () => {
+    if(status === 'WALLET_NOT_CONNECTED') return <NotConnected />;
+    else if(status === 'INITIALIZING' || !lcd || !denoms) return <Loading />;
+    
+    return <>
       {connectedWallet?.availablePost && !txResult && !txError && (
         <Box content={
           <>
             <Form
               name="basic"
-              wrapperCol={{ span: 16 }}
-              initialValues={{ 
-                address: "",
-                feeType: "uusd",
-                sendType: "uusd",
-                send: ""
-              }}
               layout="vertical"
-              requiredMark={false}
               onFinish={handleSubmit}
-              onFinishFailed={handleFail}
+              // onFinishFailed={handleFail}
             >
-              <p>Recipient Address</p>
+              <h2 className="box-header">Send</h2>
               <Form.Item
                 name="address"
-                rules={[{ required: true }]}
+                rules={[{ required: true, message: "Please input recipient's address" }]}
               >
                 <Input 
                   size="large" 
-                  placeholder="Please enter the recipient's address" 
+                  placeholder="Please enter the recipient's address..." 
                   prefix={<WalletOutlined />}
                 />
               </Form.Item>
-              <p>Send</p>
-              <Input.Group compact>
-                <Form.Item
-                  name="sendType"
-                >
-                  <Select 
-                    size="large" 
-                    style={{width: 80}} 
-                  >
-                    {denoms !== null && denoms.map(coin => {
-                      return <Option key={coin} value={coin}>{coin}</Option>
-                    })}
-                  </Select>
-                </Form.Item>
 
-                <Form.Item
-                  name="send"
-                  rules={[{ required: true }]}
+              <Form.Item
+                name="sendType"
+                rules={[{ required: true, message: 'Please select desired coin' }]}
+              >
+                <Select 
+                  size="large" 
+                  placeholder="Select token to send..."
+                  onChange={(e) => handleToken(e)}
                 >
-                  <Input 
-                    onChange={e => handleAmount(e)}
-                    size="large" 
-                    className="site-input-left" 
-                    style={{
-                      width: 380,
-                    }}
-                    type="number"
-                    placeholder="0.00" 
-                    min="0"
-                    step="0.000001"
-                  />
-                </Form.Item>
-              </Input.Group>
+                  {denoms && denoms.map(coin => {
+                    return <Option key={coin} value={coin}>{coin}</Option>
+                  })}
+                </Select>
+              </Form.Item>
 
-              <Form.Item wrapperCol={{ span: 16 }}>
+              <p>Your Balance: {currBalance && currToken ? currBalance + " " + currToken : ""}</p>
+
+              <Form.Item
+                name="send"
+                rules={[{ required: true, message: 'Please input desired amount' }]}
+              >
+                <Input 
+                  onChange={e => handleAmount(e)}
+                  size="large" 
+                  className="site-input-left" 
+                  type="number"
+                  placeholder="0.00" 
+                  min="0"
+                  max={currBalance ? currBalance : coinAmount}
+                  suffix={currToken ? currToken : null}
+                  step="0.000001"
+                />
+              </Form.Item>
+
+              <Form.Item  style={{textAlign: 'center'}}>
                 <Button 
                   type="primary" 
                   htmlType="submit"
@@ -222,9 +238,9 @@ export default function SendTokens() {
         <TxConfirm
           status="success"
           title="Successful Transaction"
-          txMsg={"Sent " + txResult.msgs[0].amount.toString() + " to " + txResult.msgs[0].to_address}
+          txMsg={"Sent " + numeral(coinAmount).format('0,0.000000') + " to " + txResult.msgs[0].to_address}
           txResult={"Transaction Hash: " + txResult.result.txhash}
-          returnFunc={setTxResult}
+          returnFunc={resetState}
         />
       )}
 
@@ -234,14 +250,19 @@ export default function SendTokens() {
           title="Failed Transaction"
           txMsg=""
           txResult={txError}
-          returnFunc={setTxError}
+          returnFunc={resetState}
         />
       )}
-
-      {!connectedWallet && <p>Wallet not connected!</p>}
       {connectedWallet && !connectedWallet.availablePost && (
         <p>Can not post Tx</p>
       )}
+    </>
+  }
+
+  return (
+    <>
+      <h1>Send Coins</h1>
+      {renderPage()}
     </>
   );
 }

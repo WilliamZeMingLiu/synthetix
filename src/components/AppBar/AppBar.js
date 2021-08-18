@@ -8,13 +8,10 @@ import {
 } from '@terra-money/wallet-provider';
 
 import { 
-  Layout, 
   Button, 
   Modal, 
   Menu, 
-  Typography, 
   Tooltip,
-  Dropdown,
   Tag,
   Badge,
 } from 'antd';
@@ -131,13 +128,14 @@ export default function AppBar(props) {
                   <NavLink to="/sell" isActive={(match) => currLink(match, '4')} />
                 </Menu.Item>
                 <Menu.Item onClick={() => handleChange('5')} key="5">
-                  Send
-                  <NavLink to="/send" isActive={(match) => currLink(match, '5')} />
+                  Swap
+                  <NavLink to="/swap" isActive={(match) => currLink(match, '5')} />
                 </Menu.Item>
                 <Menu.Item onClick={() => handleChange('6')} key="6">
-                  Swap
-                  <NavLink to="/swap" isActive={(match) => currLink(match, '6')} />
+                  Send
+                  <NavLink to="/send" isActive={(match) => currLink(match, '6')} />
                 </Menu.Item>
+                
               </Menu>
             </div>
           </>

@@ -1,11 +1,9 @@
-import { LCDClient, Coin, Denom, MsgSwap, MsgExecuteContract, StdFee, TxResult} from '@terra-money/terra.js'
-import { SwapOutlined } from '@ant-design/icons';
-import { Descriptions, Button, Form, Input, InputNumber, Select, Result } from 'antd';
-import { ArrowRightOutlined } from '@ant-design/icons';
-import { Mirror } from '@mirror-protocol/mirror.js';
-import { useQuery } from "@apollo/client";
-import axios from 'axios'; 
+import './SwapTokens.css';
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 
+// terra.js
+import { LCDClient, Coin, MsgSwap, MsgExecuteContract, TxResult} from '@terra-money/terra.js';
+// wallet provider
 import {
   CreateTxFailed,
   Timeout,
@@ -13,46 +11,48 @@ import {
   TxUnspecifiedError,
   useConnectedWallet,
   UserDenied,
-} from '@terra-money/wallet-provider'
-//import { TxResult } from '@terra-money/terra.js';
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+  useWallet,
+} from '@terra-money/wallet-provider';
 
+// custom components
 import Box from '../../components/Box/Box.js';
 import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
+import NotConnected from '../../components/NotConnected/NotConnected.js';
 import Loading from "../../components/Loading/Loading";
-
-import './SwapTokens.css';
+// antd components
+import { Button, Form, Input, Select } from 'antd';
+import { SwapOutlined } from '@ant-design/icons';
 
 const numeral = require('numeral');
 
-
 export default function SwapTokens() {
-
+  // antd
   const { Option } = Select;
 
-  // Wallet connect variables
+  const {
+    status,
+  } = useWallet();
+
+  // NOTE: unlike previous pages, coin amount is either in 
+  // dec format or int format in state
   const [allDenoms, setAllDenoms] = useState(null);
   const [userCoins, setUserCoins] = useState(null);
 
   const [currCoin, setCurrCoin] = useState(null);
   const [currCoinAmount, setCurrCoinAmount] = useState(null);
-  const [exCoin, setExCoin] = useState(null);
-
   const [currCoinBalance, setCurrCoinBalance] = useState(null);
+
+  const [exCoin, setExCoin] = useState(null);
   const [unitRate, setUnitRate] = useState(null);
   const [totalRate, setTotalRate] = useState(null);
 
   const [allExRates, setAllExRates] = useState(null);
 
-
-  // Tx state variables
   const [txResult, setTxResult] = useState(null);
   const [txError, setTxError] = useState(null);
 
-  // Grabbing wallet info from Dashboard.js
+  // set lcd obj
   const connectedWallet = useConnectedWallet();
-
-  
   const lcd = useMemo(() => {
     if (!connectedWallet) {
       return null;
@@ -64,11 +64,10 @@ export default function SwapTokens() {
     });
   }, [connectedWallet]);
 
-
   useEffect(() => {
 
     const asyncCalls = async(lcd) => {
-      // Setting denoms
+      // setting denoms
       const denoms = await lcd.oracle.activeDenoms();
       denoms.splice(11, 0, "uluna");
       setAllDenoms(denoms);
@@ -104,7 +103,6 @@ export default function SwapTokens() {
         setAllExRates(obj);
       });
 
-
       if(exCoin && currCoinAmount && currCoin){
         const tempEx = parseFloat((currCoinAmount / allExRates[currCoin]) * allExRates[exCoin]).toFixed(6);
         setTotalRate(tempEx);
@@ -114,19 +112,8 @@ export default function SwapTokens() {
         setUnitRate(unitEx);
       }
 
-      if(txResult || txError){
-        setCurrCoin(null);
-        setCurrCoinAmount(null);
-        setExCoin(null);
-
-        setCurrCoinBalance(null);
-        setUnitRate(null);
-        setTotalRate(null);
-
-      }
-
     }
-  }, [connectedWallet, lcd, exCoin, currCoinAmount, currCoin, txResult, txError])
+  }, [connectedWallet, lcd, exCoin, currCoinAmount, currCoin, allExRates])
 
 
   const handleSubmit = useCallback((values) => {
@@ -136,7 +123,6 @@ export default function SwapTokens() {
     const sendCoin = values.sendCoin;
 
     const coinObj = new Coin(sendCoin, sendAmount*1000000);
-
 
     if (!connectedWallet) {
       return;
@@ -148,6 +134,7 @@ export default function SwapTokens() {
     }
 
     setTxResult(null);
+    setTxError(null);
 
     connectedWallet
       .post({
@@ -189,11 +176,25 @@ export default function SwapTokens() {
       });
   }, [connectedWallet, totalRate]);
 
+  /*
   const handleFail = useCallback((values) => { 
     // Empty function
   })
+  */
 
-  
+  const resetState = () => {
+    setCurrCoin(null);
+    setCurrCoinAmount(null);
+    setCurrCoinBalance(null);
+
+    setExCoin(null);
+    setUnitRate(null);
+    setTotalRate(null);
+
+    setTxError(null);
+    setTxResult(null);
+    //console.log("resetState");
+  }
 
   const handleUserCoin = (e) => {
     setCurrCoin(e);
@@ -212,41 +213,26 @@ export default function SwapTokens() {
     setExCoin(e);
   }
 
+  const renderPage = () => {
+    if(status === 'WALLET_NOT_CONNECTED') return <NotConnected />;
+    if(status === 'INITIALIZING' || !userCoins || !allDenoms) return <Loading />;
 
-
-
-
-  if(!userCoins || !allDenoms) return <Loading />
-
-
-  /*
-
-
-
-
-  */
-
-  return (
-    <>
-      <h1>Swap Coins</h1>
+    return <>
       {connectedWallet?.availablePost && !txResult && !txError && (
         <Box content={
-
           <>
             <Form
               name="basic"
-              initialValues={{}}
               layout="vertical"
-              requiredMark={false}
               onFinish={handleSubmit}
-              onFinishFailed={handleFail}
+              // onFinishFailed={handleFail}
             >
               <div className="form-container">
                 <div className="form-input">
                   <h2 className="box-header">Send</h2>
                   <Form.Item
                     name="sendCoin"
-                    rules={[{ required: true }]}
+                    rules={[{ required: true, message: 'Please select desired coin' }]}
                   >
                     <Select 
                       size="large" 
@@ -260,7 +246,7 @@ export default function SwapTokens() {
                   </Form.Item>
                   <Form.Item
                     name="sendAmount"
-                    rules={[{ required: true }]}
+                    rules={[{ required: true, message: 'Please input desired amount' }]}
                   >
                     <Input 
                       onChange={e => handleUserAmount(e)}
@@ -268,7 +254,8 @@ export default function SwapTokens() {
                       type="number"
                       placeholder="0.00" 
                       min="0"
-                      max={currCoinBalance}
+                      max={currCoinBalance ? currCoinBalance : null}
+                      suffix={currCoin ? currCoin : null}
                       step="0.000001"
 
                     />
@@ -283,7 +270,7 @@ export default function SwapTokens() {
                   <h2 className="box-header">Receive</h2>
                   <Form.Item
                     name="receiveCoin" 
-                    rules={[{ required: true }]}
+                    rules={[{ required: true, message: 'Please select desired coin' }]}
                   >
 
                     <Select 
@@ -302,7 +289,6 @@ export default function SwapTokens() {
                 </div>
               </div>
 
-
               <Form.Item style={{textAlign: 'center'}}>
                 <Button 
                   type="primary" 
@@ -315,16 +301,15 @@ export default function SwapTokens() {
             </Form>
           </>
         } />
-        
       )}
 
       {txResult && (
         <TxConfirm
           status="success"
           title="Successful Transaction"
-          txMsg={"Swapped " + txResult.msgs[1].offer_coin.denom + " for " + txResult.msgs[1].ask_denom}
+          txMsg={"Swapped " + numeral(currCoinAmount).format('0,0.000000') + " " + txResult.msgs[1].offer_coin.denom + " for " + numeral(totalRate).format('0,0.000000') + " " + txResult.msgs[1].ask_denom}
           txResult={"Transaction Hash: " + txResult.result.txhash}
-          returnFunc={setTxResult}
+          returnFunc={resetState}
         />
       )}
 
@@ -334,14 +319,20 @@ export default function SwapTokens() {
           title="Failed Transaction"
           txMsg=""
           txResult={txError}
-          returnFunc={setTxError}
+          returnFunc={resetState}
         />
       )}
 
-      {!connectedWallet && <p>Wallet not connected!</p>}
       {connectedWallet && !connectedWallet.availablePost && (
         <p>Can not post Tx</p>
       )}
+    </>
+  }
+
+  return (
+    <>
+      <h1>Swap Coins</h1>
+      {renderPage()}
     </>
   );
 }

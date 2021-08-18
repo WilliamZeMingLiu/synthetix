@@ -1,17 +1,21 @@
-import { useQuery } from "@apollo/client";
-import Loading from '../../components/Loading/Loading.js';
-import Graph from '../../components/Graph/Graph.js';
-import Box from '../../components/Box/Box.js';
-import { GET_ASSETS, GET_ALL_STATS } from '../../mirApiEndpoints.js';
-import { sparklineLineGraph, basicLineGraph, basicBarGraph } from '../../components/Graph/graphStyles.js';
 import './Dashboard.css';
 import React, { useState, useEffect } from 'react';
 
+// apollo
+import { useQuery } from "@apollo/client";
+import { GET_ASSETS, GET_ALL_STATS } from '../../mirApiEndpoints.js';
+
+// custom components
+import Loading from '../../components/Loading/Loading.js';
+import Graph from '../../components/Graph/Graph.js';
+import Box from '../../components/Box/Box.js';
+// apex graph options
+import { sparklineLineGraph, basicLineGraph, basicBarGraph } from '../../components/Graph/graphStyles.js';
+// antd
 import { Table, Statistic } from 'antd';
 import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons';
 
 const numeral = require('numeral');
-
 
 export default function Dashboard() {
   // mirror token array
@@ -73,7 +77,7 @@ export default function Dashboard() {
       const tempArr = [];
       let i = 1;
       dataTokenArr.assets.forEach((e) => {
-        if(e.prices.price && e.prices.price != '0.000000'){
+        if(e.prices.price && e.prices.price !== '0.000000'){
           const tempObj = {};
           tempObj['key'] = String(i++);
           tempObj['tickerHtml'] = <p><b>{e.symbol}</b><br/>{e.name}</p>;
@@ -199,7 +203,6 @@ export default function Dashboard() {
     {title: 'Market Cap', dataIndex: 'marketCapPretty', key: 'marketCap', align: 'right'},
   ]
 
-
   // volume trading history
   const volumeHistoryData = [];
   const volumeHistoryColumns = [];
@@ -209,7 +212,6 @@ export default function Dashboard() {
   }
 
   tokenArr.sort((a, b) => (a.marketCap < b.marketCap) ? 1 : -1);
-
   
   const volumeLeaderData = [];
   const volumeLeaderColumns = [];

@@ -1,5 +1,4 @@
 import './App.css';
-import SideMenu from './components/SideMenu.js';
 import AppBar from './components/AppBar/AppBar.js';
 import Dashboard from './page/Dashboard/Dashboard.js';
 import MyWallet from './page/MyWallet/MyWallet.js';
@@ -7,12 +6,11 @@ import SendTokens from './page/SendTokens/SendTokens.js';
 import BuyTokens from './page/BuyTokens/BuyTokens.js';
 import SellTokens from './page/SellTokens/SellTokens.js';
 import SwapTokens from './page/SwapTokens/SwapTokens.js';
-import React, { useState } from 'react';
+import React from 'react';
 import {
   BrowserRouter as Router,
   Switch,
   Route,
-  Link
 } from "react-router-dom";
 
 import {
@@ -29,11 +27,10 @@ import {
 import 'antd/dist/antd.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { Layout, Menu } from 'antd';
+import { Layout } from 'antd';
 
 export default function App() {
-  const { SubMenu } = Menu;
-  const { Header, Content, Footer, Sider } = Layout;
+  const { Content, Footer } = Layout;
 
 
   /*
@@ -53,7 +50,7 @@ export default function App() {
   */
 
   // Gql obj
-  const mainUri = 'https://graph.mirror.finance/graphql'
+  // const mainUri = 'https://graph.mirror.finance/graphql'
   const testUri = 'https://tequila-graph.mirror.finance/graphql'
 
   const network: NetworkInfo = {

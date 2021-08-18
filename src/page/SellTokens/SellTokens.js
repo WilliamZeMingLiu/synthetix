@@ -1,11 +1,12 @@
-import { Coin, TxResult, MsgExecuteContract } from '@terra-money/terra.js'
-//import { Mirror } from '@mirror-protocol/mirror.js';
-//import * as All from '@terra-money/terra.js';
+import './SellTokens.css';
+import React, { useEffect, useState, useCallback } from 'react';
+
+// terra.js
+import { TxResult, MsgExecuteContract } from '@terra-money/terra.js';
+// apollo
 import { GET_BALANCES, GET_ASSET_ADDRESSES } from '../../mirApiEndpoints.js';
 import { useQuery } from "@apollo/client";
-
-import { Select, Input, Button, Form, Result } from 'antd';
-
+// wallet provider
 import {
   CreateTxFailed,
   Timeout,
@@ -14,45 +15,46 @@ import {
   UserDenied,
   useWallet,
   useConnectedWallet,
-} from '@terra-money/wallet-provider'
+} from '@terra-money/wallet-provider';
 
+// custom components
 import Box from '../../components/Box/Box.js';
 import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
+import NotConnected from '../../components/NotConnected/NotConnected.js';
 import Loading from "../../components/Loading/Loading";
+// antd components
+import { Select, Input, Button, Form } from 'antd';
 
-//import { TxResult } from '@terra-money/terra.js';
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
-
-import './SellTokens.css';
+const numeral = require('numeral');
 
 export default function SellTokens() {
-
+  // antd 
   const { Option } = Select;
-
+  // wallet provider
   const {
     status,
   } = useWallet();
-
-  const [txResult, setTxResult] = useState(null);
-  const [txError, setTxError] = useState(null);
-
-  const [tokens, setTokens] = useState([]);
-  const [allTokens, setAllTokens] = useState(null);
-  const [currToken, setCurrToken] = useState(null);
-  const [ustAmount, setUstAmount] = useState(null);
-  const [tokenAmount, setTokenAmount] = useState(null);
-
-  // const [currPrice, setCurrPrice] = useState(null);
-
-  // Grabbing wallet info from Dashboard.js
   const connectedWallet = useConnectedWallet();
-
-  // const mirror = new Mirror({lcd: lcd});
 
   let address = "";
   if(connectedWallet){
     address = connectedWallet.walletAddress;
   }
+
+  // NOTE: APIs return either dec or int format for token amounts, 
+  // to maintain consistency all states will be in dec format, with
+  // 6 decimal places rounded
+
+  // loaded states
+  const [tokens, setTokens] = useState([]);
+  const [allTokens, setAllTokens] = useState(null);
+
+  const [currToken, setCurrToken] = useState(null);
+  const [ustAmount, setUstAmount] = useState(null);
+  const [tokenAmount, setTokenAmount] = useState(null);
+
+  const [txResult, setTxResult] = useState(null);
+  const [txError, setTxError] = useState(null);
 
   const {loading: loadingBalance, error: errorBalance, data: dataBalance} = useQuery(GET_BALANCES(), {
     variables: { address },
@@ -60,33 +62,33 @@ export default function SellTokens() {
   if (errorBalance) console.log(`Error! ${errorBalance.message}`);
 
   const {loading: loadingAssets, error: errorAssets, data: dataAssets} = useQuery(GET_ASSET_ADDRESSES());
-    if (errorAssets) console.log(`Error! ${errorAssets.message}`);
+  if (errorAssets) console.log(`Error! ${errorAssets.message}`);
 
   useEffect(() => {
-      const obj = {};
-      if(!loadingAssets && dataAssets){
-        for(const asset of dataAssets.assets){
-          if(asset.prices.price && asset.prices.price != '0.000000') obj[asset.token] = asset;
-        }
-        console.log(obj);
-        setAllTokens(obj);
-      }
 
-      if(!loadingBalance && dataBalance){
-        const arr = [];
-        for(const asset of dataBalance.balances){
-          if(obj.hasOwnProperty(asset.token)){
-            const tempObj = {...obj[asset.token], balance: asset.balance}
-            arr.push(tempObj)
-          }
-        }
-        setTokens(arr);
+    const obj = {};
+    if(!loadingAssets && dataAssets){
+      for(const asset of dataAssets.assets){
+        if(asset.prices.price && asset.prices.price !== '0.000000') obj[asset.token] = asset;
       }
-  }, [dataBalance, dataAssets])
+      setAllTokens(obj);
+    }
 
-  const handleSubmit = useCallback((values) => {
-    const amount = values.amount * 1000000;
-    const type = values.type;
+    if(!loadingBalance && dataBalance){
+      const arr = [];
+      for(const asset of dataBalance.balances){
+        if(obj.hasOwnProperty(asset.token)){
+          const tempObj = {...obj[asset.token], balance: asset.balance}
+          arr.push(tempObj)
+        }
+      }
+      setTokens(arr);
+    }
+  }, [loadingAssets, loadingBalance, dataBalance, dataAssets])
+
+  const handleSubmit = useCallback(() => {
+    // const amount = (values.amount * 1000000).toString();
+    const amount = (tokenAmount*1000000).toFixed(0).toString();
 
     if (!connectedWallet) { 
       return;
@@ -98,7 +100,7 @@ export default function SellTokens() {
     }
 
     setTxResult(null);
-
+    setTxError(null);
     
     connectedWallet
       .post({
@@ -106,9 +108,9 @@ export default function SellTokens() {
         msgs: [
           new MsgExecuteContract(connectedWallet.walletAddress, currToken.token, {
             "send": {
-              "amount": amount.toString(),
+              "amount": amount,
               "contract": currToken.pair,
-              "msg": "eyJzd2FwIjp7ImJlbGllZl9wcmljZSI6IjAuMjgxOTE4NjE0MDQyOTg2Mzg2IiwibWF4X3NwcmVhZCI6IjAuMDEifX0="
+              "msg": "eyJzd2FwIjp7ImJlbGllZl9wcmljZSI6IjAuMzM4NzkyIiwibWF4X3NwcmVhZCI6IjAuMDEifX0=",
             }
           }, {})
         ],
@@ -136,144 +138,147 @@ export default function SellTokens() {
         }
       });
       
-  }, [connectedWallet, tokens, allTokens, currToken]);
+  }, [connectedWallet, currToken, tokenAmount]);
 
-  const handleFail = useCallback((values) => { 
+  /*
+  const handleFail = useCallback(() => { 
     // Empty function
   })
+  */
 
-  const handleAmount = useCallback((e) => { 
-    setTokenAmount(e.target.value);
+  const resetState = () => {
+    setUstAmount(null);
+    setTokenAmount(null);
+    setCurrToken(null);
+    setTxError(null);
+    setTxResult(null);
+    //console.log("resetState");
+  }
+
+  const handleAmount = (e) => { 
+    console.log("CHECK")
+    setTokenAmount(parseFloat(e.target.value));
     if(currToken){
-      setUstAmount((e.target.value*currToken.prices.price).toFixed(6));
+      setUstAmount(parseFloat((e.target.value*currToken.prices.price).toFixed(6)));
     }
-    
-  })
+  }
 
-  const handleSelect = useCallback((val) => { 
+  const handleSelect = (val) => { 
     for(const token of tokens){
       if(token.token === val) setCurrToken(token)
     }
     if(tokenAmount){
-      setUstAmount((tokenAmount*allTokens[val].prices.price).toFixed(6))
+      setUstAmount(parseFloat((tokenAmount*allTokens[val].prices.price).toFixed(6)));
     }
-  })
+  }
 
-  function renderPage() {
-    if(status === 'INITIALIZING') return <Loading />
-
-    else if(status === 'WALLET_CONNECTED'){
-      return <>
-        {connectedWallet?.availablePost && !txResult && !txError && (
-          <Box content={
-            <>
-              <Form
-                name="basic"
-                initialValues={{ 
-                  amount: "",
-                }}
-                layout="vertical"
-                requiredMark={false}
-                onFinish={handleSubmit}
-                onFinishFailed={handleFail}
-              >
-                <div>
-                  <h2 className="box-header">Receive</h2>
-                  <Form.Item
-                    name="type"
-                    rules={[{ required: true }]}
+  const renderPage = () => {
+    if(status === 'WALLET_NOT_CONNECTED') return <NotConnected />;
+    if(status === 'INITIALIZING' || loadingAssets || loadingBalance) return <Loading />;
+    
+    return <>
+      {connectedWallet?.availablePost && !txResult && !txError && (
+        <Box content={
+          <>
+            <Form
+              name="basic"
+              layout="vertical"
+              onFinish={handleSubmit}
+              // onFinishFailed={handleFail}
+            >
+              <div>
+                <h2 className="box-header">Sell</h2>
+                <Form.Item
+                  name="type"
+                  rules={[{ required: true, message: 'Please select desired MIR token' }]}
+                >
+                  <Select
+                    size="large"
+                    onSelect={e => handleSelect(e)}
+                    showSearch
+                    placeholder="Select token to sell..."
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    }
+                    filterSort={(optionA, optionB) =>
+                      optionA.children.toLowerCase().localeCompare(optionB.children.toLowerCase())
+                    }
                   >
-                    <Select
-                      size="large"
-                      onSelect={e => handleSelect(e)}
-                      showSearch
-                      placeholder="Token"
-                      optionFilterProp="children"
-                      filterOption={(input, option) =>
-                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                      }
-                      filterSort={(optionA, optionB) =>
-                        optionA.children.toLowerCase().localeCompare(optionB.children.toLowerCase())
-                      }
-                    >
-                    
-                    {tokens.map(token => {
-                      return <Option value={token.token}>{token.symbol}</Option>
-                    })}
-
-                    </Select>
-                  </Form.Item>
-
-                  <Form.Item
-                    name="amount"
-                    rules={[{ required: true }]}
-                  >
-                    <Input 
-                      suffix={currToken ? currToken.symbol : null}
-                      onChange={e => handleAmount(e)}
-                      size="large" 
-                      type="number"
-                      className="site-input" 
-                      placeholder="0.00"
-                      min={0}
-                      max={1000000000}
-                      step="0.000001" />
-                  </Form.Item>
                   
-                </div>
-                <p>Token Price: {currToken !== null && (currToken.prices.price + ' UST')}</p>
-                <p>Total Price: {ustAmount !== null && (ustAmount + ' UST')}</p>
-                <p>Your Balance: {currToken !== null && ((currToken.balance/1000000).toFixed(6) + ' ' + currToken.symbol)}</p>
+                  {tokens.map(token => {
+                    return <Option value={token.token}>{token.symbol}</Option>
+                  })}
 
-                <Form.Item>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit"
-                  >
-                    Sell
-                  </Button>
+                  </Select>
                 </Form.Item>
-              </Form>
-            </>
-          } />
-        )}
 
-        {txResult && (
-          <TxConfirm
-            status="success"
-            title="Successful Transaction"
-            txMsg={"Transaction Hash: " + txResult.result.txhash}
-            txResult={"Transaction Hash: " + txResult.result.txhash}
-            returnFunc={setTxResult}
-          />
-        )}
+                <p>Price: {currToken && '1 ' + currToken.symbol + ' = ' + numeral(currToken.prices.price).format('0,0.000000') + ' UST'}</p>
 
-        {txError && (
-          <TxConfirm
-            status="error"
-            title="Failed Transaction"
-            txMsg=""
-            txResult={txError}
-            returnFunc={setTxError}
-          />
-        )}
+                <Form.Item
+                  name="amount"
+                  rules={[{ required: true, message: 'Please input desired amount' }]}
+                >
+                  <Input 
+                    onChange={e => handleAmount(e)}
+                    size="large" 
+                    type="number"
+                    className="site-input" 
+                    placeholder="0.00"
+                    min={0}
+                    max={currToken ? (currToken.balance/1000000).toFixed(6) : tokenAmount}
+                    suffix={currToken ? currToken.symbol : ""}
+                    step="0.000001" />
+                </Form.Item>
+                
+              </div>
+              
+              <p>Your Balance: {currToken && (numeral((currToken.balance/1000000).toFixed(6)).format('0,0.000000') + ' ' + currToken.symbol)}</p>
+              <p>Total: {ustAmount && (numeral(ustAmount).format('0,0.000000') + ' UST')}</p>
 
-        {!connectedWallet && <p>Wallet not connected!</p>}
-        {connectedWallet && !connectedWallet.availablePost && (
-          <p>Can not post Tx</p>
-        )}
-      </>
-    }
+              <Form.Item style={{textAlign: 'center'}}>
+                <Button 
+                  type="primary" 
+                  htmlType="submit"
+                >
+                  Sell
+                </Button>
+              </Form.Item>
+            </Form>
+          </>
+        } />
+      )}
 
-    return (
-      <p>Wallet not connected!</p>
-    ) 
+      {txResult && (
+        <TxConfirm
+          status="success"
+          title="Successful Transaction"
+          txMsg={"Sold " + numeral(tokenAmount).format('0,0.000000') + " " + currToken.symbol + " for " + numeral(ustAmount).format('0,0.000000') + ' uusd'}
+          txResult={"Transaction Hash: " + txResult.result.txhash}
+          returnFunc={resetState}
+        />
+      )}
+
+      {txError && (
+        <TxConfirm
+          status="error"
+          title="Failed Transaction"
+          txMsg=""
+          txResult={txError}
+          returnFunc={resetState}
+        />
+      )}
+
+      {connectedWallet && !connectedWallet.availablePost && (
+        <p>Can not post Tx</p>
+      )}
+    </>
   }  
 
   return (
     <>
-        <h1>Sell Tokens</h1>
-        {renderPage()}
+      <h1>Sell Tokens</h1>
+      {renderPage()}
     </>
   );
 }

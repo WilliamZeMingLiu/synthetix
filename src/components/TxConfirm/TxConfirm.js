@@ -26,7 +26,7 @@ export default function TxConfirm(props) {
           <Button 
             type="primary" 
             key="console"
-            onClick={() => returnFunc(null)}
+            onClick={() => returnFunc()}
           >
             Back
           </Button>

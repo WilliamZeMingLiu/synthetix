@@ -26,8 +26,6 @@ npm install @apollo/client
 npm install graphql
 npm install antd
 npm install @ant-design/icons
-npm install @mirror-protocol/mirror.js
-npm install axios
 npm install react-apexcharts apexcharts
 npm install numeral
 npm install react-router-dom

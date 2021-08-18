@@ -1,34 +1,36 @@
-import { LCDClient } from '@terra-money/terra.js'
 import './MyWallet.css';
 import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery } from "@apollo/client";
-import { GET_BALANCES, GET_ASSET_ADDRESSES } from '../../mirApiEndpoints.js';
-import Chart from "react-apexcharts";
-import Box from '../../components/Box/Box.js';
-import Loading from '../../components/Loading/Loading.js';
 
-
+// terra.js
+import { LCDClient } from '@terra-money/terra.js'
+// wallet provider
 import {
   useWallet,
   useConnectedWallet,
-} from '@terra-money/wallet-provider'
+} from '@terra-money/wallet-provider';
+// apollo
+import { useQuery } from "@apollo/client";
+import { GET_BALANCES, GET_ASSET_ADDRESSES } from '../../mirApiEndpoints.js';
 
-import { Table, Statistic } from 'antd';
+// apex charts
+import Chart from "react-apexcharts";
+// custom components
+import Box from '../../components/Box/Box.js';
+import Loading from '../../components/Loading/Loading.js';
+import NotConnected from '../../components/NotConnected/NotConnected.js';
+// antd
+import { Table, Statistic, Empty } from 'antd';
 
 const numeral = require('numeral');
 
-
 export default function MyWallet() {
-
   // Connecting to wallet via browser extension
   const {
     status,
     wallets,
   } = useWallet();
 
-  // Wallet connect variables
   const [coins, setCoins] = useState(null);
-  // const [coinPrices, setCoinPrices] = useState(null);
   const [coinBalance, setCoinBalance] = useState(null);
 
   const [tokens, setTokens] = useState(null);
@@ -37,7 +39,7 @@ export default function MyWallet() {
 
   const [loadingBalance, setLoadingBalance] = useState(true);  
 
-  // Grabbing wallet info from Dashboard.js
+  // set lcd obj
   const connectedWallet = useConnectedWallet();
   const lcd = useMemo(() => {
     if (!connectedWallet) {
@@ -60,8 +62,7 @@ export default function MyWallet() {
   if (errorAssets) console.log(`Error! ${errorAssets.message}`);
 
 
-  
-  
+
   // Send TX to specified wallet
   useEffect(() => {
     setLoadingBalance(true);
@@ -119,7 +120,7 @@ export default function MyWallet() {
       const obj = {};
       if(!loadingAssets && dataAssets){
         for(const asset of dataAssets.assets){
-          if(asset.prices.price && asset.prices.price != '0.000000') obj[asset.token] = asset;
+          if(asset.prices.price && asset.prices.price !== '0.000000') obj[asset.token] = asset;
         }
         setAllTokens(obj);
       }
@@ -144,10 +145,11 @@ export default function MyWallet() {
 
     setLoadingBalance(false);
 
-  }, [connectedWallet, lcd, dataAssets, dataMBalance]);
+  }, [connectedWallet, lcd, dataAssets, dataMBalance, loadingAssets, loadingMBalance]);
 
 
   // Render balance table
+  /*
   function renderBalanceRows() {
     if(!coins) return;
     return coins.map( obj => {
@@ -157,6 +159,7 @@ export default function MyWallet() {
       </tr>
     })
   }
+  */
 
 
   function renderBalanceTable() {
@@ -209,10 +212,11 @@ export default function MyWallet() {
       }
     }
 
+    /*
     if(mirGraphData.length === 0 || mirGraphData.length === 0){
       return;
     }
-    
+    */
 
     const graphOptions = {
       series1: mirGraphData,
@@ -333,12 +337,15 @@ export default function MyWallet() {
             />
             <div className="pie-container">
               <h2 className="box-header">Token Allocation</h2>
-              <Chart
-                options={graphOptions.options1}
-                series={graphOptions.series1}
-                type="donut"
-                height="300px"
-              />
+              {mirGraphData && mirGraphData.length > 0 ? 
+                <Chart
+                  options={graphOptions.options1}
+                  series={graphOptions.series1}
+                  type="donut"
+                  height="300px"
+                /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              }
+              
             </div>
           </div>
         } />
@@ -354,12 +361,15 @@ export default function MyWallet() {
             />
             <div className="pie-container">
               <h2 className="box-header">Coin Allocation</h2>
-              <Chart
-                options={graphOptions.options2}
-                series={graphOptions.series2}
-                type="donut"
-                height="300px"
-              />
+              {coinGraphData && coinGraphData.length > 0 ? 
+                <Chart
+                  options={graphOptions.options2}
+                  series={graphOptions.series2}
+                  type="donut"
+                  height="300px"
+                /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              }
+              
             </div>
           </div>
         } />
@@ -381,52 +391,35 @@ export default function MyWallet() {
     </>
   }
 
-  function renderWalletInfo(status) {
-    if(status === 'WALLET_CONNECTED'){
-      return <>
-          <Box content={
-            <div className="wallet-address">
-              <p style={{color: '#1890ff'}}><span style={{color: '#000000'}}>Your Wallet Address: </span>{wallets[0].terraAddress}</p>
-            </div>
-          } />
-          {renderBalanceTable()}
-        </>
-    }
+  function renderPage() {
+    if(status === 'WALLET_NOT_CONNECTED') return <NotConnected />;
+    if(status === 'INITIALIZING' 
+      || loadingBalance 
+      || loadingAssets 
+      || loadingMBalance
+      || !coinBalance
+      || !tokenBalance
+      || !coins
+      || !allTokens 
+      || !tokens
+      || !dataAssets
+      || !dataMBalance
+    ) return <Loading />;
 
-    return (
-      <p>Wallet not connected!</p>
-    ) 
+    return <>
+      <Box content={
+        <div className="wallet-address">
+          <p style={{color: '#1890ff'}}><span style={{color: '#000000'}}>Your Wallet Address: </span>{wallets[0].terraAddress}</p>
+        </div>
+      } />
+      {renderBalanceTable()}
+    </>
   }  
 
-  if(status === 'WALLET_NOT_CONNECTED') {
-    return (
-      <>
-        <h1>Wallet</h1>
-        {renderWalletInfo(status)}
-      </>
-    ); 
-  }
-
-  if(status === 'INITIALIZING' 
-    || loadingBalance 
-    || loadingAssets 
-    || loadingMBalance
-    || !coinBalance
-    || !tokenBalance
-    || !coins
-    || !allTokens 
-    || !tokens
-    || !dataAssets
-    || !dataMBalance
-  ) return <Loading />;
-
-  else {
-    return (
-      <>
-        <h1>Wallet</h1>
-        {renderWalletInfo(status)}
-      </>
-    );
-  }
-
+  return (
+    <>
+      <h1>Wallet</h1>
+      {renderPage()}
+    </>
+  );
 }
