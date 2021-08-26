@@ -404,7 +404,7 @@ export default function MyWallet() {
       || !tokens
       || !dataAssets
       || !dataMBalance
-    ) return <Loading />;
+    ) return <Loading css="loading-page" />;
 
     return <>
       <Box content={

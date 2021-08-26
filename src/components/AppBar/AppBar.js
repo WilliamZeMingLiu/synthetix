@@ -182,7 +182,7 @@ export default function AppBar(props) {
       {status === WalletStatus.WALLET_CONNECTED && (
         <>
           <div className="connect-wallet-button">
-            {lcd && lcd.config.name === ('columbus-4') ? 
+            {lcd && lcd.config.chainID === ('columbus-4') ? 
               <Tag style={{height: '22px'}} color="#2db7f5">{lcd.config.chainID}</Tag> :
               <Tag style={{height: '22px'}} color="#f50">{lcd.config.chainID}</Tag>
             }
@@ -197,7 +197,7 @@ export default function AppBar(props) {
           </div>
 
           <div className="connect-wallet-button-small">
-            {lcd && lcd.config.name === ('columbus-4') ? 
+            {lcd && lcd.config.chainID === ('columbus-4') ? 
               <Badge status="processing" />:
               <Badge status="error" />
             }

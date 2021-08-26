@@ -18,6 +18,7 @@ import {
 import Box from '../../components/Box/Box.js';
 import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
 import NotConnected from '../../components/NotConnected/NotConnected.js';
+import EmptyWallet from '../../components/EmptyWallet/EmptyWallet.js';
 import Loading from "../../components/Loading/Loading";
 //antd components
 import { Button, Form, Input, Select } from 'antd';
@@ -62,18 +63,23 @@ export default function SendTokens() {
   
 
   useEffect(() => {
+    /*
     const asyncCalls = async(lcd) => {
       // Setting denoms
       const denoms = await lcd.oracle.activeDenoms();
+      console.log(denoms);
       setDenoms(denoms);
     }
+    */
 
     if(connectedWallet && lcd){
-      asyncCalls(lcd);
+      // asyncCalls(lcd);
+      const tempArr = [];
       lcd.bank.balance(connectedWallet.walletAddress).then((coins) => {
         let index = 1;
         for (var coin in coins._coins) {
           if (coins._coins.hasOwnProperty(coin)) {
+            tempArr.push(coin);
             var tempObj = {};
             tempObj['key'] = index++;
             tempObj['coin'] = coin;
@@ -81,6 +87,7 @@ export default function SendTokens() {
             bank.coins.push(tempObj);
           }
         }
+        setDenoms(tempArr);
       });
     }
     
@@ -162,76 +169,79 @@ export default function SendTokens() {
 
   const renderPage = () => {
     if(status === 'WALLET_NOT_CONNECTED') return <NotConnected />;
-    else if(status === 'INITIALIZING' || !lcd || !denoms) return <Loading />;
+    else if(status === 'INITIALIZING' || !lcd || !denoms) return <Loading css="loading-page" />;
     
     return <>
       {connectedWallet?.availablePost && !txResult && !txError && (
-        <Box content={
-          <>
-            <Form
-              name="basic"
-              layout="vertical"
-              onFinish={handleSubmit}
-              // onFinishFailed={handleFail}
-            >
-              <h2 className="box-header">Send</h2>
-              <Form.Item
-                name="address"
-                rules={[{ required: true, message: "Please input recipient's address" }]}
+        <>
+          {denoms && denoms.length > 0 ? null : <EmptyWallet />}
+          <Box content={
+            <>
+              <Form
+                name="basic"
+                layout="vertical"
+                onFinish={handleSubmit}
+                // onFinishFailed={handleFail}
               >
-                <Input 
-                  size="large" 
-                  placeholder="Please enter the recipient's address..." 
-                  prefix={<WalletOutlined />}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="sendType"
-                rules={[{ required: true, message: 'Please select desired coin' }]}
-              >
-                <Select 
-                  size="large" 
-                  placeholder="Select token to send..."
-                  onChange={(e) => handleToken(e)}
+                <h2 className="box-header">Send</h2>
+                <Form.Item
+                  name="address"
+                  rules={[{ required: true, message: "Please input recipient's address" }]}
                 >
-                  {denoms && denoms.map(coin => {
-                    return <Option key={coin} value={coin}>{coin}</Option>
-                  })}
-                </Select>
-              </Form.Item>
+                  <Input 
+                    size="large" 
+                    placeholder="Please enter the recipient's address..." 
+                    prefix={<WalletOutlined />}
+                  />
+                </Form.Item>
 
-              <p>Your Balance: {currBalance && currToken ? currBalance + " " + currToken : ""}</p>
-
-              <Form.Item
-                name="send"
-                rules={[{ required: true, message: 'Please input desired amount' }]}
-              >
-                <Input 
-                  onChange={e => handleAmount(e)}
-                  size="large" 
-                  className="site-input-left" 
-                  type="number"
-                  placeholder="0.00" 
-                  min="0"
-                  max={currBalance ? currBalance : coinAmount}
-                  suffix={currToken ? currToken : null}
-                  step="0.000001"
-                />
-              </Form.Item>
-
-              <Form.Item  style={{textAlign: 'center'}}>
-                <Button 
-                  type="primary" 
-                  htmlType="submit"
+                <Form.Item
+                  name="sendType"
+                  rules={[{ required: true, message: 'Please select desired coin' }]}
                 >
-                  Send
-                </Button>
-              </Form.Item>
-            </Form>
-          </>
-        } />
-        
+                  <Select 
+                    size="large" 
+                    placeholder="Select token to send..."
+                    onChange={(e) => handleToken(e)}
+                  >
+                    {denoms && denoms.map(coin => {
+                      return <Option key={coin} value={coin}>{coin}</Option>
+                    })}
+                  </Select>
+                </Form.Item>
+
+                <p>Your Balance: {currBalance && currToken ? currBalance + " " + currToken : ""}</p>
+
+                <Form.Item
+                  name="send"
+                  rules={[{ required: true, message: 'Please input desired amount' }]}
+                >
+                  <Input 
+                    onChange={e => handleAmount(e)}
+                    size="large" 
+                    className="site-input-left" 
+                    type="number"
+                    placeholder="0.00" 
+                    min="0"
+                    max={currBalance ? currBalance : coinAmount}
+                    suffix={currToken ? currToken : null}
+                    step="0.000001"
+                  />
+                </Form.Item>
+
+                <Form.Item  style={{textAlign: 'center'}}>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit"
+                    disabled={denoms && denoms.length > 0 ? false : true}
+                  >
+                    Send
+                  </Button>
+                </Form.Item>
+              </Form>
+            </>
+          } />
+        </>
       )}
 
       {txResult && (

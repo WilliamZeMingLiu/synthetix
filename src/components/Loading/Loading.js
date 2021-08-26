@@ -2,9 +2,9 @@ import './Loading.css';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Spin } from 'antd';
 
-export default function Loading() {  
+export default function Loading(props) {  
   return (
-    <div className="loading-page">
+    <div className={props.css}>
       <Spin 
         tip="Loading..." 
         indicator={

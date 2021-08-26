@@ -58,6 +58,7 @@ export default function Dashboard() {
     },
   });
   if (errorTokenArr) console.log(`Error! ${errorTokenArr.message}`);
+
   // get basic mirror stat data
   const {
     loading: loadingStat, 
@@ -229,7 +230,7 @@ export default function Dashboard() {
 
   if(loadingTokenArr || loadingStat) {
     return (
-      <Loading />
+      <Loading css="loading-page" />
     )
   }
 

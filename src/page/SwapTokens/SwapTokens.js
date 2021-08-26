@@ -18,6 +18,7 @@ import {
 import Box from '../../components/Box/Box.js';
 import TxConfirm from '../../components/TxConfirm/TxConfirm.js';
 import NotConnected from '../../components/NotConnected/NotConnected.js';
+import EmptyWallet from '../../components/EmptyWallet/EmptyWallet.js';
 import Loading from "../../components/Loading/Loading";
 // antd components
 import { Button, Form, Input, Select } from 'antd';
@@ -73,7 +74,7 @@ export default function SwapTokens() {
       setAllDenoms(denoms);
     }
 
-    if(connectedWallet){
+    if(connectedWallet && lcd){
       asyncCalls(lcd);
 
       const tempArr = [];
@@ -215,92 +216,96 @@ export default function SwapTokens() {
 
   const renderPage = () => {
     if(status === 'WALLET_NOT_CONNECTED') return <NotConnected />;
-    if(status === 'INITIALIZING' || !userCoins || !allDenoms) return <Loading />;
+    if(status === 'INITIALIZING' || !userCoins || !allDenoms) return <Loading css="loading-page" />;
 
     return <>
       {connectedWallet?.availablePost && !txResult && !txError && (
-        <Box content={
-          <>
-            <Form
-              name="basic"
-              layout="vertical"
-              onFinish={handleSubmit}
-              // onFinishFailed={handleFail}
-            >
-              <div className="form-container">
-                <div className="form-input">
-                  <h2 className="box-header">Send</h2>
-                  <Form.Item
-                    name="sendCoin"
-                    rules={[{ required: true, message: 'Please select desired coin' }]}
-                  >
-                    <Select 
-                      size="large" 
-                      placeholder="Select your coin..."
-                      onSelect={e => handleUserCoin(e)}
+        <>
+          {userCoins && userCoins.length > 0 ? null : <EmptyWallet />}
+          <Box content={
+            <>
+              <Form
+                name="basic"
+                layout="vertical"
+                onFinish={handleSubmit}
+                // onFinishFailed={handleFail}
+              >
+                <div className="form-container">
+                  <div className="form-input">
+                    <h2 className="box-header">Send</h2>
+                    <Form.Item
+                      name="sendCoin"
+                      rules={[{ required: true, message: 'Please select desired coin' }]}
                     >
-                      {userCoins && userCoins.map(coin => {
-                        return <Option key={coin.coin} value={coin.coin}>{coin.coin}</Option>
-                      })}
-                    </Select>
-                  </Form.Item>
-                  <Form.Item
-                    name="sendAmount"
-                    rules={[{ required: true, message: 'Please input desired amount' }]}
-                  >
-                    <Input 
-                      onChange={e => handleUserAmount(e)}
-                      size="large" 
-                      type="number"
-                      placeholder="0.00" 
-                      min="0"
-                      max={currCoinBalance ? currCoinBalance : null}
-                      suffix={currCoin ? currCoin : null}
-                      step="0.000001"
+                      <Select 
+                        size="large" 
+                        placeholder="Select your coin..."
+                        onSelect={e => handleUserCoin(e)}
+                      >
+                        {userCoins && userCoins.map(coin => {
+                          return <Option key={coin.coin} value={coin.coin}>{coin.coin}</Option>
+                        })}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item
+                      name="sendAmount"
+                      rules={[{ required: true, message: 'Please input desired amount' }]}
+                    >
+                      <Input 
+                        onChange={e => handleUserAmount(e)}
+                        size="large" 
+                        type="number"
+                        placeholder="0.00" 
+                        min="0"
+                        max={currCoinBalance ? currCoinBalance : null}
+                        suffix={currCoin ? currCoin : null}
+                        step="0.000001"
 
-                    />
-                  </Form.Item>
-                  <p>Balance: {currCoinBalance && numeral(currCoinBalance).format('0,0.000000') + ' ' + currCoin}</p>
+                      />
+                    </Form.Item>
+                    <p>Balance: {currCoinBalance && numeral(currCoinBalance).format('0,0.000000') + ' ' + currCoin}</p>
 
+                  </div>
+
+                  <SwapOutlined style={{fontSize: '30px', color: '#8c8c8c'}} />
+
+                  <div className="form-input">
+                    <h2 className="box-header">Receive</h2>
+                    <Form.Item
+                      name="receiveCoin" 
+                      rules={[{ required: true, message: 'Please select desired coin' }]}
+                    >
+
+                      <Select 
+                        size="large"
+                        placeholder="Select a currency..."
+                        onSelect={e => handleExCoin(e)}
+                      >
+                        {allDenoms && allDenoms.map(coin => {
+                          return <Option key={coin} value={coin}>{coin}</Option>
+                        })}
+                      </Select>
+
+                    </Form.Item>
+                    <p>Exchange Rate: {unitRate && "1 " + currCoin + " = " + numeral(unitRate).format('0,0.000000') + " " + exCoin}</p>
+                    <p>Total: {totalRate && currCoinAmount && numeral(totalRate).format('0,0.000000') + " " + exCoin}</p>
+                  </div>
                 </div>
 
-                <SwapOutlined style={{fontSize: '30px', color: '#8c8c8c'}} />
-
-                <div className="form-input">
-                  <h2 className="box-header">Receive</h2>
-                  <Form.Item
-                    name="receiveCoin" 
-                    rules={[{ required: true, message: 'Please select desired coin' }]}
+                <Form.Item style={{textAlign: 'center'}}>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit"
+                    disabled={userCoins && userCoins.length > 0 ? false : true}
                   >
+                    Swap
+                  </Button>
+                </Form.Item>
 
-                    <Select 
-                      size="large"
-                      placeholder="Select a currency..."
-                      onSelect={e => handleExCoin(e)}
-                    >
-                      {allDenoms && allDenoms.map(coin => {
-                        return <Option key={coin} value={coin}>{coin}</Option>
-                      })}
-                    </Select>
-
-                  </Form.Item>
-                  <p>Exchange Rate: {unitRate && "1 " + currCoin + " = " + numeral(unitRate).format('0,0.000000') + " " + exCoin}</p>
-                  <p>Total: {totalRate && currCoinAmount && numeral(totalRate).format('0,0.000000') + " " + exCoin}</p>
-                </div>
-              </div>
-
-              <Form.Item style={{textAlign: 'center'}}>
-                <Button 
-                  type="primary" 
-                  htmlType="submit"
-                >
-                  Swap
-                </Button>
-              </Form.Item>
-
-            </Form>
-          </>
-        } />
+              </Form>
+            </>
+          } />
+        </>
       )}
 
       {txResult && (

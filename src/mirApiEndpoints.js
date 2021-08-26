@@ -33,6 +33,39 @@ export const GET_ASSETS = () => {
   `
 }
 
+export const GET_ASSET = () => {
+  return gql`
+    query Asset($token: String!, $startDate: Float!, $endDate: Float!)  {
+      asset(token: $token) {
+        symbol,
+        name,
+        description,
+        token,
+        pair, 
+        prices {
+          price,
+          history(interval: 1440, to: $endDate, from: $startDate) {
+            timestamp,
+            price
+          }
+        },
+        statistic {
+          liquidity(network:COMBINE),
+          volume(network:COMBINE),
+          marketCap(network:COMBINE),
+        },
+        news {
+          datetime,
+          headline,
+          source,
+          url,
+          summary
+        }
+      }
+    }
+  `
+}
+
 export const GET_ASSET_ADDRESSES = () => {
   return gql `
     query {
